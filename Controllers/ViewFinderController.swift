@@ -22,12 +22,14 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
     
     var videoDataOutputQueue: DispatchQueue!
     
+    var driver: Driver!
+    
     override func viewDidLoad() {
         //Initialize the subViews
-        previewView = UIView.init(frame: CGRect(x: 0, y: 0, width: self.view.frame.width/2, height: self.view.frame.height/2))
+        previewView = UIView.init(frame: CGRect(x: 0, y: 0, width: self.view.frame.width/2, height: self.view.frame.height))
         print(self.view.frame.width)
         print(self.view.frame.height)
-        captureImageView = UIImageView.init(frame: CGRect(x: 0, y: self.view.frame.height/2 + 10, width: self.view.frame.width/2, height: self.view.frame.height/2))
+        captureImageView = UIImageView.init(frame: CGRect(x: self.view.frame.width/2, y: 0, width: self.view.frame.width/2, height: self.view.frame.height))
         self.view.add(previewView)
         self.view.add(captureImageView)
         
@@ -68,6 +70,9 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
         
         videoConnection = videoDataOutput.connection(with: AVMediaType.video)
         
+        //Initialize and start driver
+        driver = Driver(imageCallBack: updateImageCallback(cgImage:))
+        driver.start()
     }
     
     // Configure the Live Preview
@@ -94,20 +99,26 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
     func captureOutput(_ captureOutput: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         let imageBuffer: CVPixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)!
         let ciimage : CIImage = CIImage(cvPixelBuffer: imageBuffer)
-        let image : UIImage = self.convert(cmage: ciimage)
+        let cgImage: CGImage = self.convert(cmage: ciimage)
         
         // Size the Preview Layer to fit the Preview View
         DispatchQueue.main.async {
-            self.captureImageView.image = image
+//            self.captureImageView.image = image
+            self.driver.setImage(image: cgImage)
         }
+        
+    }
+    
+    func updateImageCallback(cgImage: CGImage) {
+        let image: UIImage = UIImage.init(cgImage: cgImage)
+        self.captureImageView.image = image
     }
     
     // Convert CIImage to CGImage
-    func convert(cmage:CIImage) -> UIImage
+    func convert(cmage:CIImage) -> CGImage
     {
          let context:CIContext = CIContext.init(options: nil)
          let cgImage:CGImage = context.createCGImage(cmage, from: cmage.extent)!
-         let image:UIImage = UIImage.init(cgImage: cgImage)
-         return image
+         return cgImage
     }
 }
