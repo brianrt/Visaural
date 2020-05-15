@@ -84,7 +84,7 @@ class ImageProcessing {
         
         // Create a 1D matrix containing the three luma coefficients that
         // specify the color-to-grayscale conversion.
-        let divisor: Int32 = 0x1000
+        let divisor: Int32 = 0x1000 // 16^3 = 4096
         let fDivisor = Float(divisor)
         
         self.coefficientsMatrix = [
@@ -100,34 +100,6 @@ class ImageProcessing {
                                                preBias,
                                                postBias,
                                                vImage_Flags(kvImageNoFlags))
-        
-        
-        // Prevent against flashing
-        if destinationBuffer.data.load(as: Float.self).isNaN  {
-            cleanUp()
-            return nil
-        }
-        
-        let sample = destinationBuffer.data.load(as: Float.self)
-        let sample1 = destinationBuffer.data.load(fromByteOffset: 20, as: Float.self)
-        let sample2 = destinationBuffer.data.load(fromByteOffset: 40, as: Float.self)
-        let sample3 = destinationBuffer.data.load(fromByteOffset: 60, as: Float.self)
-        let sample4 = destinationBuffer.data.load(fromByteOffset: 80, as: Float.self)
-        
-        let distance1 = abs(sample.distance(to: sample1))
-        let distance2 = abs(sample.distance(to: sample2))
-        let distance3 = abs(sample.distance(to: sample3))
-        let distance4 = abs(sample.distance(to: sample4))
-
-        // Prevent against flashing
-        let threshold: Float = 1.0e-10
-        if distance1.isLess(than: threshold) && distance2.isLess(than: threshold) && distance3.isLess(than: threshold) && distance4.isLess(than: threshold) {
-            cleanUp()
-            return nil
-        }
-        
-        
-
         
         // Create a 1-channel, 8-bit grayscale format that's used to
         // generate a displayable image.
