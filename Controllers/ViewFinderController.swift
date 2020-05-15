@@ -13,22 +13,20 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
     var previewView: UIView!
     var captureImageView: UIImageView!
     var button: UIButton!
+    var currImage: CGImage!
     
     var captureSession: AVCaptureSession!
     var videoDataOutput: AVCaptureVideoDataOutput!
     var videoPreviewLayer: AVCaptureVideoPreviewLayer!
-    
     var videoConnection: AVCaptureConnection?
-    
     var videoDataOutputQueue: DispatchQueue!
     
+    var framesPerSecond = 30.0
     var driver: Driver!
     
     override func viewDidLoad() {
         //Initialize the subViews
         previewView = UIView.init(frame: CGRect(x: 0, y: 0, width: self.view.frame.width/2, height: self.view.frame.height))
-        print(self.view.frame.width)
-        print(self.view.frame.height)
         captureImageView = UIImageView.init(frame: CGRect(x: self.view.frame.width/2, y: 0, width: self.view.frame.width/2, height: self.view.frame.height))
         self.view.add(previewView)
         self.view.add(captureImageView)
@@ -55,8 +53,7 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
             videoDataOutput = AVCaptureVideoDataOutput()
             videoDataOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
             videoDataOutput.setSampleBufferDelegate(self, queue: videoDataOutputQueue)
-            
-            
+            videoConnection = videoDataOutput.connection(with: AVMediaType.video)
             
             if captureSession.canAddInput(input) && captureSession.canAddOutput(videoDataOutput) {
                 captureSession.addInput(input)
@@ -68,18 +65,14 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
             print("Error Unable to initialize back camera:  \(error.localizedDescription)")
         }
         
-        videoConnection = videoDataOutput.connection(with: AVMediaType.video)
-        
-        //Initialize and start driver
-        driver = Driver(imageCallBack: updateImageCallback(cgImage:))
-        driver.start()
+        //Initialize driver and start timer
+        driver = Driver()
+        start()
     }
-    
+
     // Configure the Live Preview
     func setupLivePreview() {
-        
         videoPreviewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
-        
         videoPreviewLayer.videoGravity = .resizeAspect
         videoPreviewLayer.connection?.videoOrientation = .landscapeRight
         self.previewView.layer.addSublayer(videoPreviewLayer)
@@ -103,15 +96,24 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
         
         // Size the Preview Layer to fit the Preview View
         DispatchQueue.main.async {
-//            self.captureImageView.image = image
-            self.driver.setImage(image: cgImage)
+            self.currImage = cgImage
         }
-        
     }
-    
-    func updateImageCallback(cgImage: CGImage) {
-        let image: UIImage = UIImage.init(cgImage: cgImage)
-        self.captureImageView.image = image
+
+    func start() {
+        let timeInterval = 1 / self.framesPerSecond
+        Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: true, block: { timer in
+            self.processImage()
+        })
+    }
+
+    func processImage() {
+        if self.currImage != nil {
+            let cgImage = self.driver.processImage(image: self.currImage)
+            if cgImage != nil {
+                self.captureImageView.image = UIImage.init(cgImage: cgImage!)
+            }
+        }
     }
     
     // Convert CIImage to CGImage
