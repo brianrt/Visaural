@@ -10,7 +10,6 @@ import UIKit
 import AVFoundation
 
 class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
-    var previewView: UIView!
     var captureImageView: UIImageView!
     var button: UIButton!
     var currImage: CGImage!
@@ -21,24 +20,24 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
     var videoConnection: AVCaptureConnection?
     var videoDataOutputQueue: DispatchQueue!
     
-    var framesPerSecond = 30.0
+    var framesPerSecond = 10.0
     var driver: Driver!
     
+    var didSetFrame = false
+
     override func viewDidLoad() {
         //Initialize the subViews
-        previewView = UIView.init(frame: CGRect(x: 0, y: 0, width: self.view.frame.width/2, height: self.view.frame.height))
-        captureImageView = UIImageView.init(frame: CGRect(x: self.view.frame.width/2, y: 0, width: self.view.frame.width/2, height: self.view.frame.height))
-        self.view.add(previewView)
+        captureImageView = UIImageView.init()
         self.view.add(captureImageView)
         
         // Initialize queues
-        let highQueue = DispatchQueue.global(qos: .userInteractive)
-        videoDataOutputQueue = DispatchQueue(label: "com.apple.sample.capturepipeline.video", attributes: [], target: highQueue)
+        let dataOutputQueue = DispatchQueue(label: "video data queue", qos: .userInitiated, attributes: [], autoreleaseFrequency: .workItem)
         
         // Create new session
         // Configure session for high resolution still photo capture
         captureSession = AVCaptureSession()
-        captureSession.sessionPreset = .medium
+        captureSession.sessionPreset = .photo
+
         
         // Select input camera
         guard let backCamera = AVCaptureDevice.default(for: AVMediaType.video)
@@ -52,75 +51,73 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
             let input = try AVCaptureDeviceInput(device: backCamera)
             videoDataOutput = AVCaptureVideoDataOutput()
             videoDataOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
-            videoDataOutput.setSampleBufferDelegate(self, queue: videoDataOutputQueue)
+            videoDataOutput.setSampleBufferDelegate(self, queue: dataOutputQueue)
             videoConnection = videoDataOutput.connection(with: AVMediaType.video)
             
             if captureSession.canAddInput(input) && captureSession.canAddOutput(videoDataOutput) {
                 captureSession.addInput(input)
                 captureSession.addOutput(videoDataOutput)
-                setupLivePreview()
             }
         }
         catch let error  {
             print("Error Unable to initialize back camera:  \(error.localizedDescription)")
         }
         
-        //Initialize driver and start timer
-        driver = Driver()
-        start()
-    }
-
-    // Configure the Live Preview
-    func setupLivePreview() {
-        videoPreviewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
-        videoPreviewLayer.videoGravity = .resizeAspect
-        videoPreviewLayer.connection?.videoOrientation = .landscapeRight
-        self.previewView.layer.addSublayer(videoPreviewLayer)
-        
-        // Start the Session on the background thread
-        DispatchQueue.global(qos: .userInitiated).async { //[weak self] in
-            self.captureSession.startRunning()
-            
-            
-            // Size the Preview Layer to fit the Preview View
-            DispatchQueue.main.async {
-                self.videoPreviewLayer.frame = self.previewView.bounds
-            }
+        // Set framerate
+        do {
+            try backCamera.lockForConfiguration()
+            backCamera.activeVideoMinFrameDuration = CMTimeMake(value: 1, timescale: Int32(self.framesPerSecond))
+            backCamera.unlockForConfiguration()
+        } catch {
+            print("Could not lock")
         }
+
+        //Initialize driver
+        driver = Driver()
+        self.captureSession.startRunning()
     }
     
     func captureOutput(_ captureOutput: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        let imageBuffer: CVPixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)!
-        let ciimage : CIImage = CIImage(cvPixelBuffer: imageBuffer)
-        let cgImage: CGImage = self.convert(cmage: ciimage)
-        
-        // Size the Preview Layer to fit the Preview View
-        DispatchQueue.main.async {
-            self.currImage = cgImage
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+            return
         }
-    }
 
-    func start() {
-        let timeInterval = 1 / self.framesPerSecond
-        Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: true, block: { timer in
-            self.processImage()
-        })
-    }
+        //Lock the pixel buffer
+        CVPixelBufferLockBaseAddress(pixelBuffer, CVPixelBufferLockFlags.readOnly)
+        let ciimage: CIImage = CIImage(cvPixelBuffer: pixelBuffer)
+        let cgImage: CGImage = self.convert(cmage: ciimage)
 
-    func processImage() {
-        if self.currImage != nil {
-            let cgImage = self.driver.processImage(image: self.currImage)
-            if cgImage != nil {
-                self.captureImageView.image = UIImage.init(cgImage: cgImage!)
+
+        // Process image
+        let outImage = self.driver.processImage(image: cgImage)
+        if outImage != nil {
+            DispatchQueue.main.async {
+                if !self.didSetFrame {
+                    self.setFrame(cgImage: cgImage)
+                }
+                self.captureImageView.image = UIImage.init(cgImage: outImage!)
             }
         }
+
+        // Unlock pixel buffer
+        CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags.readOnly)
     }
-    
+
     // Convert CIImage to CGImage
     func convert(cmage:CIImage) -> CGImage
     {
          let context:CIContext = CIContext.init(options: nil)
          let cgImage:CGImage = context.createCGImage(cmage, from: cmage.extent)!
          return cgImage
+    }
+
+    // Sets frame
+    func setFrame(cgImage: CGImage) {
+        // set captureImageView frame
+        let ratio = Float(cgImage.width) / Float(cgImage.height)
+        let newWidth = Float(self.view.frame.height) * ratio
+
+        self.captureImageView.frame = CGRect(x: (self.view.frame.width - CGFloat(newWidth))/2.0, y: 0, width: CGFloat(newWidth), height: self.view.frame.height)
+        self.didSetFrame = true
     }
 }

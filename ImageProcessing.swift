@@ -28,8 +28,6 @@ class ImageProcessing {
     let postBias: Int32 = 0
     var coefficientsMatrix: [Int16] = [0]
 
-    
-    
     func convertToGray(cgImage: CGImage) -> CGImage? {
         /*
          The format of the source asset.
@@ -51,8 +49,8 @@ class ImageProcessing {
                 var sourceImageBuffer = try? vImage_Buffer(cgImage: cgImage,
                                                            format: format),
                 
-                var scaledBuffer = try? vImage_Buffer(width: Int(sourceImageBuffer.height / 1),
-                                                      height: Int(sourceImageBuffer.width / 1),
+                var scaledBuffer = try? vImage_Buffer(width: Int(sourceImageBuffer.height / 5),
+                                                      height: Int(sourceImageBuffer.width / 5),
                                                       bitsPerPixel: format.bitsPerPixel) else {
                                                         fatalError("Unable to create source buffers.")
             }
@@ -111,14 +109,11 @@ class ImageProcessing {
             renderingIntent: .defaultIntent) else {
                 return nil
         }
-
-        
         
         // Create a Core Graphics image from the grayscale destination buffer.
         let result = try? destinationBuffer.createCGImage(format: monoFormat)
         cleanUp()
         return result
-        
     }
     
     func cleanUp(){
@@ -127,7 +122,4 @@ class ImageProcessing {
         sourceBuffer.free()
         coefficientsMatrix.removeAll()
     }
-
-    
-
 }
