@@ -20,7 +20,7 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
     var videoConnection: AVCaptureConnection?
     var videoDataOutputQueue: DispatchQueue!
     
-    var framesPerSecond = 10.0
+    var framesPerSecond = 30.0
     var driver: Driver!
     
     var didSetFrame = false
@@ -93,7 +93,7 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
         if outImage != nil {
             DispatchQueue.main.async {
                 if !self.didSetFrame {
-                    self.setFrame(cgImage: cgImage)
+                    self.setFrame(cgImage: outImage!)
                 }
                 self.captureImageView.image = UIImage.init(cgImage: outImage!)
             }
@@ -113,11 +113,16 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
 
     // Sets frame
     func setFrame(cgImage: CGImage) {
-        // set captureImageView frame
+        let viewFrame = self.view.frame
         let ratio = Float(cgImage.width) / Float(cgImage.height)
-        let newWidth = Float(self.view.frame.height) * ratio
 
-        self.captureImageView.frame = CGRect(x: (self.view.frame.width - CGFloat(newWidth))/2.0, y: 0, width: CGFloat(newWidth), height: self.view.frame.height)
+        if viewFrame.width < viewFrame.height {
+            let newHeight = Float(viewFrame.width) / ratio
+            self.captureImageView.frame = CGRect(x: (viewFrame.width - CGFloat(viewFrame.width))/2.0, y: 0, width: viewFrame.width, height: CGFloat(newHeight))
+        } else {
+            let newWidth = Float(viewFrame.height) * ratio
+            self.captureImageView.frame = CGRect(x: (viewFrame.width - CGFloat(newWidth))/2.0, y: 0, width: CGFloat(newWidth), height: viewFrame.height)
+        }
         self.didSetFrame = true
     }
 }

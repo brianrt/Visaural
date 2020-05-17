@@ -49,8 +49,8 @@ class ImageProcessing {
                 var sourceImageBuffer = try? vImage_Buffer(cgImage: cgImage,
                                                            format: format),
                 
-                var scaledBuffer = try? vImage_Buffer(width: Int(sourceImageBuffer.height / 5),
-                                                      height: Int(sourceImageBuffer.width / 5),
+                var scaledBuffer = try? vImage_Buffer(width: Int(sourceImageBuffer.width / 10),
+                                                      height: Int(sourceImageBuffer.height / 10),
                                                       bitsPerPixel: format.bitsPerPixel) else {
                                                         fatalError("Unable to create source buffers.")
             }
