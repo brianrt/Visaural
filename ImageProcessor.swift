@@ -57,7 +57,7 @@ class ImageProcessor {
                 var sourceImageBuffer = try? vImage_Buffer(cgImage: cgImage,
                                                            format: format),
                 
-                var scaledBuffer = try? vImage_Buffer(width: Int(Float(sourceImageBuffer.width) * Float(self.height) / Float(sourceImageBuffer.width)),
+                var scaledBuffer = try? vImage_Buffer(width: Int(Float(sourceImageBuffer.width) * Float(self.height) / Float(sourceImageBuffer.height)),
                                                       height: Int(self.height),
                                                       bitsPerPixel: format.bitsPerPixel)
                 else {

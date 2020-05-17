@@ -7,6 +7,7 @@
 //
 
 import AVFoundation
+import Accelerate
 
 typealias Signal = (_ frequency: Float, _ time: Float) -> Float
 
@@ -45,7 +46,59 @@ class SoundProcessor {
     }
     
     public func generateSound(image: CGImage) {
+        /*
+         The format of the source asset.
+         */
+        let format: vImage_CGImageFormat = {
+            guard
+                let format = vImage_CGImageFormat(cgImage: image) else {
+                    fatalError("Unable to create format.")
+            }
+            
+            return format
+        }()
         
+        /*
+         The vImage buffer containing a scaled down copy of the source asset.
+         */
+        
+        var imageBuffer: vImage_Buffer = {
+            guard
+                let sourceImageBuffer = try? vImage_Buffer(cgImage: image,
+                                                           format: format)
+                else {
+                    fatalError("Unable to create source buffers.")
+            }
+            return sourceImageBuffer
+        }()
+        
+
+        let width = imageBuffer.width
+        let height = imageBuffer.height
+        
+        var destinationBufferRotate: vImage_Buffer = {
+            guard let destinationBuffer = try? vImage_Buffer(width: Int(height),
+                                                  height: Int(width),
+                                                  bitsPerPixel: 8) else {
+                                                    fatalError("Unable to create destination buffers.")
+            }
+            return destinationBuffer
+        }()
+        
+        var destinationBufferFlip: vImage_Buffer = {
+            guard let destinationBuffer = try? vImage_Buffer(width: Int(height),
+                                                  height: Int(width),
+                                                  bitsPerPixel: 8) else {
+                                                    fatalError("Unable to create destination buffers.")
+            }
+            return destinationBuffer
+        }()
+
+
+        // Transpose image by rotating 90 degrees and horizontal reflection
+        let radians = 270 * Float.pi / 180.0
+        vImageRotate_Planar8(&imageBuffer, &destinationBufferRotate, nil, radians, 0, vImage_Flags(kvImageNoFlags))
+        vImageHorizontalReflect_Planar8(&destinationBufferRotate, &destinationBufferFlip, vImage_Flags(kvImageNoFlags))
     }
 }
 
