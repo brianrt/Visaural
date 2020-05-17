@@ -20,7 +20,7 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
     var videoConnection: AVCaptureConnection?
     var videoDataOutputQueue: DispatchQueue!
     
-    var framesPerSecond = 30.0
+    var framesPerSecond: Float = 30.0
     var driver: Driver!
     
     var didSetFrame = false
@@ -73,7 +73,7 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
         }
 
         //Initialize driver
-        driver = Driver()
+        driver = Driver(framesPerSecond: self.framesPerSecond)
         self.captureSession.startRunning()
     }
     
@@ -86,7 +86,6 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
         CVPixelBufferLockBaseAddress(pixelBuffer, CVPixelBufferLockFlags.readOnly)
         let ciimage: CIImage = CIImage(cvPixelBuffer: pixelBuffer)
         let cgImage: CGImage = self.convert(cmage: ciimage)
-
 
         // Process image
         let outImage = self.driver.processImage(image: cgImage)

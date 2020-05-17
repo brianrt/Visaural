@@ -8,19 +8,24 @@
 import AVFoundation
 
 class Driver {
-    var minFreq = 1000
-    var maxFreq = 8000
-    var height = 100
-    var width: Int!
-    var imageProcessor = ImageProcessing()
+    let height = 100
     
-    init() {
+    var imageProcessor: ImageProcessor!
+    var soundProcessor: SoundProcessor!
+    
+    init(framesPerSecond: Float) {
         Synth.shared.setWaveformTo(Oscillator.sine)
         setPlaybackStateTo(true)
+        imageProcessor = ImageProcessor(height: height)
+        soundProcessor = SoundProcessor(yResolution: height, framesPerSecond: framesPerSecond)
     }
 
     public func processImage(image: CGImage) -> CGImage! {
-        return self.imageProcessor.convertToGray(cgImage: image)
+        let transformedImage = imageProcessor.convertToGray(cgImage: image)
+        if transformedImage != nil {
+            soundProcessor.generateSound(image: transformedImage!)
+        }
+        return transformedImage
     }
 
     private func setPlaybackStateTo(_ state: Bool) {

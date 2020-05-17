@@ -9,7 +9,7 @@
 import AVFoundation
 import Accelerate
 
-class ImageProcessing {
+class ImageProcessor {
     
     var sourceBuffer: vImage_Buffer!
     var destinationBuffer: vImage_Buffer!
@@ -27,6 +27,13 @@ class ImageProcessing {
     let preBias: [Int16] = [0, 0, 0, 0]
     let postBias: Int32 = 0
     var coefficientsMatrix: [Int16] = [0]
+    
+    //Desired output image height and width
+    var height: UInt
+    
+    init(height: Int) {
+        self.height = UInt(height)
+    }
 
     func convertToGray(cgImage: CGImage) -> CGImage? {
         /*
@@ -44,15 +51,17 @@ class ImageProcessing {
         /*
          The vImage buffer containing a scaled down copy of the source asset.
          */
+        
         self.sourceBuffer = {
             guard
                 var sourceImageBuffer = try? vImage_Buffer(cgImage: cgImage,
                                                            format: format),
                 
-                var scaledBuffer = try? vImage_Buffer(width: Int(sourceImageBuffer.width / 10),
-                                                      height: Int(sourceImageBuffer.height / 10),
-                                                      bitsPerPixel: format.bitsPerPixel) else {
-                                                        fatalError("Unable to create source buffers.")
+                var scaledBuffer = try? vImage_Buffer(width: Int(Float(sourceImageBuffer.width) * Float(self.height) / Float(sourceImageBuffer.width)),
+                                                      height: Int(self.height),
+                                                      bitsPerPixel: format.bitsPerPixel)
+                else {
+                    fatalError("Unable to create source buffers.")
             }
             
             defer {
