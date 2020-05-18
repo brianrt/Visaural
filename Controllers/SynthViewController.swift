@@ -80,11 +80,11 @@ class SynthViewController: UIViewController {
     }
     
     private func setSynthParametersFrom(_ coord: CGPoint) {
-        Oscillator.amplitude = Float((view.bounds.height - coord.y) / view.bounds.height) 
+//        Oscillator.amplitude = Float((view.bounds.height - coord.y) / view.bounds.height)
 //        Synth.shared.frequency = Float(coord.x / view.bounds.width) * 1014 + 32
         
-        let amplitudePercent = Int(Oscillator.amplitude * 100)
+//        let amplitudePercent = Int(Oscillator.amplitude * 100)
         let frequencyHertz = Int(Synth.shared.frequency)
-        parameterLabel.text = "Frequency: \(frequencyHertz) Hz  Amplitude: \(amplitudePercent)%"
+//        parameterLabel.text = "Frequency: \(frequencyHertz) Hz  Amplitude: \(amplitudePercent)%"
     }
 }

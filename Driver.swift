@@ -8,7 +8,7 @@
 import AVFoundation
 
 class Driver {
-    let height = 100
+    let height = 75
     
     var imageProcessor: ImageProcessor!
     var soundProcessor: SoundProcessor!
@@ -17,7 +17,7 @@ class Driver {
         Synth.shared.setWaveformTo(Oscillator.sine)
         setPlaybackStateTo(true)
         imageProcessor = ImageProcessor(height: height)
-        soundProcessor = SoundProcessor(yResolution: height, framesPerSecond: framesPerSecond)
+        soundProcessor = SoundProcessor(yRes: height, framesPerSecond: framesPerSecond)
     }
 
     public func processImage(image: CGImage) -> CGImage! {

@@ -30,7 +30,7 @@ class Synth {
         let ablPointer = UnsafeMutableAudioBufferListPointer(audioBufferList)
 
         for frame in 0..<Int(frameCount) {
-            let sampleVal = self.signal(self.frequency, self.time)
+            let sampleVal = self.signal(self.time)
             self.time += self.deltaTime
 //            self.time = fmod(self.time, 1/self.frequency)
             
@@ -46,11 +46,6 @@ class Synth {
     private var time: Float = 0
     private let sampleRate: Double
     private let deltaTime: Float // time between samples taken at sampleRate
-    
-    // Image properties
-//    private let columnDuration: Float // duration of each column
-    
-    
     private var signal: Signal
     
     // MARK: Init

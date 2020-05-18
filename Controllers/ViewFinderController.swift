@@ -20,7 +20,7 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
     var videoConnection: AVCaptureConnection?
     var videoDataOutputQueue: DispatchQueue!
     
-    var framesPerSecond: Float = 10.0
+    var framesPerSecond: Float = 3.0
     var driver: Driver!
     
     var didSetFrame = false
