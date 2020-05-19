@@ -3,7 +3,6 @@
 //  Swift Synth
 //
 //  Created by Brian Thompson on 5/7/20.
-//  Copyright © 2020 Grant Emerson. All rights reserved.
 //
 
 import UIKit

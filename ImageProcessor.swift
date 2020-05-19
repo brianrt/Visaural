@@ -3,7 +3,7 @@
 //  Swift Synth
 //
 //  Created by Brian Thompson on 5/12/20.
-//  Copyright © 2020 Grant Emerson. All rights reserved.
+//  Copyright © 2020 Brian Thompson. All rights reserved.
 //
 
 import AVFoundation

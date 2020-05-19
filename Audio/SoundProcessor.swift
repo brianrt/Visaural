@@ -2,37 +2,26 @@
 //  Oscillator.swift
 //  Swift Synth
 //
-//  Created by Grant Emerson on 7/21/19.
-//  Copyright © 2019 Grant Emerson. All rights reserved.
+//  Created by Brian Thompson
 //
 
 import AVFoundation
 import Accelerate
 
-typealias Signal = (_ time: Float) -> Float
-
+typealias Signal = (_ time: Float, _ frequency: Float, _ index: Int) -> Float
+ 
 struct Oscillator {
     static var rowIndex = 0
     static var all_amplitudes: [[UInt8]] = [[1]]
-    static var isUpdating = false
-    static var frequencies: [Float] = [440]
+    static var height: Float = 1
     
-    static let sine: Signal = { time in
-        
+    static let sine: Signal = { time, frequency, i in
         let amplitudes = all_amplitudes[rowIndex]
-        let length = amplitudes.count
-        
-        if length < 2 {
+        if amplitudes.count < 2 {
             return 0.0
         }
-        var sum: Float = 0.0
-        for i in 0..<length {
-            let amplitude = Float(amplitudes[i]) / Float(255)
-            let frequency = frequencies[i]
-            sum = sum + (amplitude * sin(2.0 * Float.pi * frequency * time))
-        }
-        sum = sum / Float(length)
-        return sum
+        let amplitude = Float(amplitudes[i]) / Float(255)
+        return amplitude/height * sin(2.0 * Float.pi * frequency * time)
     }
 }
 
@@ -52,7 +41,7 @@ class SoundProcessor {
         self.framesPerSecond = Double(framesPerSecond)
         frequencies = []
         for y in 0..<yRes {
-            let baseFreq = (maxFreq - minFreq) / height * (height - Float(y)) + minFreq
+            let baseFreq = (maxFreq - minFreq) / Float(yRes) * (Float(yRes) - Float(y)) + minFreq
             var toneFreq = baseFreq
             frequencies.append(baseFreq)
             for _ in 0..<numTones - 1 {
@@ -60,8 +49,6 @@ class SoundProcessor {
                 frequencies.append(toneFreq)
             }
         }
-        
-        Oscillator.frequencies = frequencies
     }
     
     public func generateSound(image: CGImage) {
@@ -77,7 +64,7 @@ class SoundProcessor {
         }()
         
         /*
-         The vImage buffer containing a scaled down copy of the source asset.
+         Load image into a buffer
          */
         
         var imageBuffer: vImage_Buffer = {
@@ -94,6 +81,7 @@ class SoundProcessor {
         let width = imageBuffer.width
         let height = imageBuffer.height
         
+        // Create buffers for rotation and reflection transformation outputs
         var destinationBufferRotate: vImage_Buffer = {
             guard let destinationBuffer = try? vImage_Buffer(width: Int(height),
                                                   height: Int(width),
@@ -130,6 +118,7 @@ class SoundProcessor {
         
         colDuration = Double(1.0 / (framesPerSecond * Double(newHeight)))
         
+        // Compute amplitude array for each column
         var all_amplitudes: [[UInt8]] = []
         for row in 0..<newHeight {
             let rowStartIndex = row * rowBytes
@@ -146,30 +135,16 @@ class SoundProcessor {
                 }
             }
             all_amplitudes.append(amplitudes)
-            
-            
-
-            
-            
-            
         }
         
+        // Update amplitudes after colDuration seconds for all rows
         for row in 0..<newHeight {
-            // Update amplitudes after colDuration seconds for all rows
             DispatchQueue.main.async {
                 Timer.scheduledTimer(withTimeInterval: Double(row) * self.colDuration, repeats: false) { timer in
                     Oscillator.rowIndex = row
                 }
             }
         }
-        
-        
-        
         Oscillator.all_amplitudes = all_amplitudes
-        
-        
-        
-        
-
     }
 }
