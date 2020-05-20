@@ -8,7 +8,8 @@
 import AVFoundation
 
 class Driver {
-    let height = 35
+    let numNodes = 10//Number of source nodes to attach to audio engine
+    let height = 50 //Must be a multiple of numNodes
     
     var imageProcessor: ImageProcessor!
     var soundProcessor: SoundProcessor!
@@ -18,7 +19,7 @@ class Driver {
         imageProcessor = ImageProcessor(height: height)
         soundProcessor = SoundProcessor(yRes: height, framesPerSecond: framesPerSecond)
         let frequencies = soundProcessor.frequencies
-        synth = Synth(frequencies: frequencies)
+        synth = Synth(frequencies: frequencies, numNodes: numNodes)
         setPlaybackStateTo(true)
     }
 

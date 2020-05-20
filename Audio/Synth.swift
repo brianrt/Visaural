@@ -24,8 +24,8 @@ class Synth {
     private let deltaTime: Float // time between samples taken at sampleRate
     private var signal: Signal
     
-    init(frequencies: [Float]) {
-        times = [Float](repeating: 0, count: frequencies.count)
+    init(frequencies: [Float], numNodes: Int) {
+        times = [Float](repeating: 0, count: numNodes)
         audioEngine = AVAudioEngine()
         
         let mainMixer = audioEngine.mainMixerNode
@@ -37,17 +37,21 @@ class Synth {
         
         self.signal = Oscillator.sine
         Oscillator.height = Float(frequencies.count)
-        
         let inputFormat = AVAudioFormat(commonFormat: format.commonFormat,
                                         sampleRate: format.sampleRate,
                                         channels: 1,
                                         interleaved: format.isInterleaved)
         
-        for i in 0..<frequencies.count {
-            let frequency = frequencies[i]
-            let sourceNode = createSourceNode(index: i, frequency: frequency)
+        let numFrequencies = frequencies.count
+        let frequenciesPerNode = numFrequencies / numNodes
+        var f_index = 0
+        for n_index in 0..<numNodes {
+            let range = f_index..<f_index + frequenciesPerNode
+            let nodeFrequencies = Array(frequencies[range])
+            let sourceNode = createSourceNode(range: range, frequencies: nodeFrequencies, index: n_index)
             audioEngine.attach(sourceNode)
             audioEngine.connect(sourceNode, to: mainMixer, format: inputFormat)
+            f_index += frequenciesPerNode
         }
         
         audioEngine.connect(mainMixer, to: outputNode, format: nil)
@@ -61,23 +65,21 @@ class Synth {
         
     }
     
-    private func createSourceNode(index: Int, frequency: Float) -> AVAudioSourceNode {
+    private func createSourceNode(range: Range<Int>, frequencies: [Float], index: Int) -> AVAudioSourceNode {
         return AVAudioSourceNode { _, _, frameCount, audioBufferList in
             let ablPointer = UnsafeMutableAudioBufferListPointer(audioBufferList)
 
             for frame in 0..<Int(frameCount) {
                 var time = self.times[index]
-                let sampleVal = self.signal(time, frequency, index)
+                let sampleVal = self.signal(time, frequencies, range)
                 time += self.deltaTime
-                time = fmod(time, 1/frequency)
                 self.times[index] = time
-                
+
                 for buffer in ablPointer {
                     let buf: UnsafeMutableBufferPointer<Float> = UnsafeMutableBufferPointer(buffer)
                     buf[frame] = sampleVal
                 }
             }
-            
             return noErr
         }
     }

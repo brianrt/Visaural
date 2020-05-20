@@ -8,20 +8,26 @@
 import AVFoundation
 import Accelerate
 
-typealias Signal = (_ time: Float, _ frequency: Float, _ index: Int) -> Float
+typealias Signal = (_ time: Float, _ frequencies: [Float], _ range: Range<Int>) -> Float
  
 struct Oscillator {
-    static var rowIndex = 0
+    static var colIndex = 0
     static var all_amplitudes: [[UInt8]] = [[1]]
     static var height: Float = 1
     
-    static let sine: Signal = { time, frequency, i in
-        let amplitudes = all_amplitudes[rowIndex]
+    static let sine: Signal = { time, frequencies, range in
+        var amplitudes = all_amplitudes[colIndex]
         if amplitudes.count < 2 {
             return 0.0
         }
-        let amplitude = Float(amplitudes[i]) / Float(255)
-        return amplitude/height * sin(2.0 * Float.pi * frequency * time)
+        var sum = Float(0.0)
+        var f = 0
+        for a in range {
+            let amplitude = Float(amplitudes[a]) / (Float(255) * height)
+            sum += amplitude * sin(2.0 * Float.pi * frequencies[f] * time)
+            f += 1
+        }
+        return sum
     }
 }
 
@@ -138,13 +144,13 @@ class SoundProcessor {
         }
         
         // Update amplitudes after colDuration seconds for all rows
-        for row in 0..<newHeight {
+        Oscillator.all_amplitudes = all_amplitudes
+        for col in 0..<newHeight {
             DispatchQueue.main.async {
-                Timer.scheduledTimer(withTimeInterval: Double(row) * self.colDuration, repeats: false) { timer in
-                    Oscillator.rowIndex = row
+                Timer.scheduledTimer(withTimeInterval: Double(col) * self.colDuration, repeats: false) { timer in
+                    Oscillator.colIndex = col
                 }
             }
         }
-        Oscillator.all_amplitudes = all_amplitudes
     }
 }
