@@ -88,6 +88,9 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
 
         // Process image
         let outImage = self.driver.processImage(image: cgImage)
+
+        // Unlock pixel buffer
+        CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags.readOnly)
         if outImage != nil {
             DispatchQueue.main.async {
                 if !self.didSetFrame {
@@ -96,9 +99,6 @@ class ViewFinderController: UIViewController, AVCapturePhotoCaptureDelegate, AVC
                 self.captureImageView.image = UIImage.init(cgImage: outImage!)
             }
         }
-
-        // Unlock pixel buffer
-        CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags.readOnly)
     }
 
     // Convert CIImage to CGImage

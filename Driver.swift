@@ -8,8 +8,8 @@
 import AVFoundation
 
 class Driver {
-    let numNodes = 10//Number of source nodes to attach to audio engine
-    let height = 50 //Must be a multiple of numNodes
+    let numNodes = 6//Number of source nodes to attach to audio engine
+    let height = 36 //Must be a multiple of numNodes
     
     var imageProcessor: ImageProcessor!
     var soundProcessor: SoundProcessor!

@@ -27,12 +27,22 @@ class ImageProcessor {
     let preBias: [Int16] = [0, 0, 0, 0]
     let postBias: Int32 = 0
     var coefficientsMatrix: [Int16] = [0]
+    let divisor: Int32 = 0x1000 // 16^3 = 4096
     
     //Desired output image height and width
     var height: UInt
     
     init(height: Int) {
         self.height = UInt(height)
+
+        // Create a 1D matrix containing the three luma coefficients that
+        // specify the color-to-grayscale conversion.
+        let fDivisor = Float(divisor)
+        self.coefficientsMatrix = [
+            Int16(redCoefficient * fDivisor),
+            Int16(greenCoefficient * fDivisor),
+            Int16(blueCoefficient * fDivisor)
+        ]
     }
 
     func convertToGray(cgImage: CGImage) -> CGImage? {
@@ -88,18 +98,7 @@ class ImageProcessor {
             
             return destinationBuffer
         }()
-        
-        // Create a 1D matrix containing the three luma coefficients that
-        // specify the color-to-grayscale conversion.
-        let divisor: Int32 = 0x1000 // 16^3 = 4096
-        let fDivisor = Float(divisor)
-        
-        self.coefficientsMatrix = [
-            Int16(redCoefficient * fDivisor),
-            Int16(greenCoefficient * fDivisor),
-            Int16(blueCoefficient * fDivisor)
-        ]
-        
+
         vImageMatrixMultiply_ARGB8888ToPlanar8(&self.sourceBuffer,
                                                &self.destinationBuffer,
                                                &self.coefficientsMatrix,
@@ -129,6 +128,5 @@ class ImageProcessor {
         // Clear everything from memory
         destinationBuffer.free()
         sourceBuffer.free()
-        coefficientsMatrix.removeAll()
     }
 }

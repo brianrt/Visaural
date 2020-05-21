@@ -62,7 +62,10 @@ class Synth {
         } catch {
             print("Could not start engine: \(error.localizedDescription)")
         }
-        
+    }
+
+    deinit {
+        audioEngine.stop()
     }
     
     private func createSourceNode(range: Range<Int>, frequencies: [Float], index: Int) -> AVAudioSourceNode {
@@ -73,6 +76,9 @@ class Synth {
                 var time = self.times[index]
                 let sampleVal = self.signal(time, frequencies, range)
                 time += self.deltaTime
+                if time > 115 {
+                    time = 0.0
+                }
                 self.times[index] = time
 
                 for buffer in ablPointer {
